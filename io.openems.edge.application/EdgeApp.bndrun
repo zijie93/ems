@@ -178,7 +178,8 @@
 	bnd.identity;id='io.openems.edge.timeofusetariff.awattar',\
 	bnd.identity;id='io.openems.edge.timeofusetariff.corrently',\
 	bnd.identity;id='io.openems.edge.timeofusetariff.tibber',\
-
+	bnd.identity;id='io.openems.edge.utility',\
+	
 -runbundles: \
 	Java-WebSocket;version='[1.5.4,1.5.5)',\
 	com.fazecast.jSerialComm;version='[2.5.1,2.5.2)',\
@@ -343,6 +344,7 @@
 	io.openems.edge.timeofusetariff.awattar;version=snapshot,\
 	io.openems.edge.timeofusetariff.corrently;version=snapshot,\
 	io.openems.edge.timeofusetariff.tibber;version=snapshot,\
+	io.openems.edge.utility;version=snapshot,\
 	io.openems.shared.influxdb;version=snapshot,\
 	io.openems.wrapper.eu.chargetime.ocpp;version=snapshot,\
 	io.openems.wrapper.fastexcel;version=snapshot,\
