@@ -40,12 +40,13 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 	private final Logger log = LoggerFactory.getLogger(AbstractOpenemsSunSpecComponent.class);
 
 	// The active SunSpec-Models and their reading-priority
-	private final Map<SunSpecModel, Priority> activeModels;
+	protected Map<SunSpecModel, Priority> activeModels;
 	private final ModbusProtocol modbusProtocol;
 
 	private int readFromCommonBlockNo = 1;
 	private int commonBlockCounter = 0;
 
+	private boolean readOnly = false;
 	private boolean isSunSpecInitializationCompleted = false;
 
 	/**
@@ -74,6 +75,14 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 		throw new IllegalArgumentException("Use the other activate() method.");
 	}
 
+	protected boolean activate(ComponentContext context, String id, String alias, boolean enabled, int unitId,
+			ConfigurationAdmin cm, String modbusReference, String modbusId, int readFromCommonBlockNo, boolean readOnly)
+			throws OpenemsException {
+		this.readOnly = readOnly;
+		return this.activate(context, id, alias, enabled, unitId, cm, modbusReference, modbusId, readFromCommonBlockNo);
+	}
+
+	
 	protected boolean activate(ComponentContext context, String id, String alias, boolean enabled, int unitId,
 			ConfigurationAdmin cm, String modbusReference, String modbusId, int readFromCommonBlockNo)
 			throws OpenemsException {
@@ -340,6 +349,9 @@ public abstract class AbstractOpenemsSunSpecComponent extends AbstractOpenemsMod
 				break;
 			case READ_WRITE:
 			case WRITE_ONLY:
+				if (this.readOnly) {
+					break;
+				}
 				// Add a Write-Task
 				// TODO create one FC16WriteRegistersTask for entire block
 				final Task writeTask = new FC16WriteRegistersTask(element.startAddress, element);
