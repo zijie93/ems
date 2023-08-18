@@ -108,10 +108,62 @@ jobs:
           npm ci --prefer-offline --cache ~/.npm
           node_modules/.bin/ng config cli.cache.path "~/.ng"
           node_modules/.bin/ng build -c "openems,openems-edge-prod,prod"
-          node_modules/.bin/ng lint
           export CHROME_BIN=/usr/bin/google-chrome-stable
-          npm run test -- --no-watch --no-progress --browsers=ChromeHeadlessCI
+          npm run test -- --no-watch --no-progress --browsers=ChromeHeadlessCI --code-coverage
 
+      # - name: Coverage report
+      #   uses: eleboys/test-coverage-report-action@v1.0.2
+      #   id: report
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     path: ui/coverage/coverage-summary.json
+      #     title: Karma Test Coverage
+  
+      # - name: Print the output summary
+      #   run: echo "Report coverage json ${{ steps.report.outputs.summary }}"
+      # - name: Comment on Pull Request
+      #   env:
+      #       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #       PR_NUMBER: ${{ github.event.pull_request.number }}
+      #   run: |
+      #       gh pr comment ${{github.event.pull_request.number}} --body ${{ steps.report.outputs.summary }}
+
+      - name: Code Coverage Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: ui/coverage/coverage.cobertura.xml
+          badge: true
+          fail_below_min: false
+          format: markdown
+          hide_branch_rate: true
+          hide_complexity: true
+          indicators: true
+          thresholds: '0'
+      
+      - name: Add Coverage PR Comment
+        id: 'json'
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          coverage=echo ${{steps.json.outputs.total.lines.pct}};
+
+          color=red;
+          if (( $(echo "$coverage > 95" | bc -l) )); then
+            color=success;
+          elif (( $(echo "$coverage > 80" | bc -l) )); then
+            color=green;
+          elif (( $(echo "$coverage > 95" | bc -l) )); then
+            color=yellow;
+          fi;
+
+          mkdir -p ./pr
+          echo 'badge=![Code Coverage]'"(https://img.shields.io/badge/Code%20Coverage-${coverage}%25-${color}?style=flat)" > ./pr/pr_badge
+          echo $PR_NUMBER > ./pr/pr_number
+        # uses: marocchino/sticky-pull-request-comment@v2
+        # if: github.event_name == 'pull_request'
+        # with:
+        #   recreate: true
+        #   path: code-coverage-results.md
       #
       # Is this a Tag? Prepare release assets
       #
