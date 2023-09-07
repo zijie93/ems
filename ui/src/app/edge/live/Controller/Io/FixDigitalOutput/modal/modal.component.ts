@@ -1,48 +1,53 @@
 import { Component, Input } from '@angular/core';
-import { Router } from '@angular/router';
-import { ModalController } from '@ionic/angular';
 import { TranslateService } from '@ngx-translate/core';
-import { Edge, EdgeConfig, Service, Websocket } from 'src/app/shared/shared';
+import { Converter } from 'src/app/shared/genericComponents/shared/converter';
+import { Name } from 'src/app/shared/genericComponents/shared/name';
+import { AbstractFormlyComponent, OeFormlyField, OeFormlyView } from 'src/app/shared/genericComponents/shared/oe-formly-component';
+import { EdgeConfig } from 'src/app/shared/shared';
+import { Role } from 'src/app/shared/type/role';
 
 @Component({
-  selector: 'fixdigitaloutput-modal',
-  templateUrl: './modal.component.html'
+  templateUrl: '../../../../../../shared/formly/formly-field-modal/template.html'
 })
-export class Controller_Io_FixDigitalOutputModalComponent {
+export class ModalComponent extends AbstractFormlyComponent {
 
-  @Input() public edge: Edge;
   @Input() public component: EdgeConfig.Component;
 
-  constructor(
-    public service: Service,
-    protected translate: TranslateService,
-    public modalCtrl: ModalController,
-    public router: Router,
-    public websocket: Websocket
-  ) { }
+  protected override generateView(config: EdgeConfig, role: Role): OeFormlyView {
+    return ModalComponent.generateView(config, role, this.translate, this.component.id);
+  }
 
-  /**  
-   * Updates the 'isOn'-Property of the FixDigitalOutput-Controller.
-   * 
-   * @param event 
-   */
-  updateMode(event: CustomEvent) {
-    let oldMode = this.component.properties.isOn;
+  public static generateView(config: EdgeConfig, role: Role, translate: TranslateService, componentId: string): OeFormlyView {
+    let component = config.components[componentId];
+    let lines: OeFormlyField[] = [
+      {
+        type: 'name-line',
+        name: translate.instant('General.mode')
+      },
+      {
+        type: 'buttons-from-channel-line',
+        buttons: [
+          {
+            name: translate.instant('General.on'),
+            value: "true",
+            icon: { color: "success", name: "power-outline" }
+          },
+          {
+            name: translate.instant('General.off'),
+            value: "false",
+            icon: { color: "danger", name: "power-outline" }
+          }
+        ],
+        controlName: 'isOn',
+        channel: component.id + '/_PropertyIsOn',
+        converter: Converter.IS_RELAY_ON
+      }
+    ];
 
-    // ion-segment button only supports string as type
-    // https://ionicframework.com/docs/v4/api/segment-button
-
-    let newMode = (event.detail.value.toLowerCase() === 'true');
-
-    this.edge.updateComponentConfig(this.websocket, this.component.id, [
-      { name: 'isOn', value: newMode }
-    ]).then(() => {
-      this.component.properties.isOn = newMode;
-      this.service.toast(this.translate.instant('General.changeAccepted'), 'success');
-    }).catch(reason => {
-      this.component.properties.isOn = oldMode;
-      this.service.toast(this.translate.instant('General.changeFailed') + '\n' + reason.error.message, 'danger');
-      console.warn(reason);
-    });
+    return {
+      title: Name.METER_ALIAS_OR_ID(component),
+      lines: lines,
+      component: component
+    };
   }
 }

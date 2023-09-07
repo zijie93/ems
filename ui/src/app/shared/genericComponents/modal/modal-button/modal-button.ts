@@ -1,5 +1,6 @@
 import { Component, Input } from "@angular/core";
 import { Icon } from "src/app/shared/type/widget";
+
 import { AbstractModalLine } from "../abstract-modal-line";
 
 @Component({
@@ -16,6 +17,6 @@ export type ButtonLabel = {
     name: string;
     value: string;
     /** Icons for Button, displayed above the corresponding name */
-    icons?: Icon;
+    icon?: Icon;
     callback?: Function;
 }

@@ -88,6 +88,16 @@ namespace Factory {
         ]
     };
 
+    export const CONTROLLER_IO_FIX_DIGITAL_OUTPUT = {
+        id: "Controller.Io.FixDigitalOutput",
+        natureIds: [
+            "io.openems.edge.controller.io.fixdigitaloutput.ControllerIoFixDigitalOutput",
+            "io.openems.edge.common.component.OpenemsComponent",
+            "io.openems.edge.controller.api.Controller",
+            "io.openems.edge.timedata.api.TimedataProvider"
+        ]
+    };
+
     export const SOLAR_EDGE_PV_INVERTER = {
         id: "SolarEdge.PV-Inverter",
         natureIds: [
@@ -142,6 +152,30 @@ export const ESS_GENERIC_MANAGEDSYMMETRIC = (id: string, alias?: string): Compon
     properties: {
         invert: false,
         modbusUnitId: 5
+    },
+    channels: {}
+});
+
+export const CONTROLLER_IO_FIX_DIGITAL_OUTPUT = (id: string, alias?: string): Component => ({
+    id: id,
+    alias: alias,
+    factory: Factory.CONTROLLER_IO_FIX_DIGITAL_OUTPUT,
+    properties: {
+        enabled: true,
+        isOn: false,
+        outputChannelAddress: "io0/Relay3"
+    },
+    channels: {}
+});
+
+export const GOODWE_GRID_METER = (id: string, alias?: string): Component => ({
+    id: id,
+    alias: alias,
+    factory: Factory.METER_GOODWE_GRID,
+    properties: {
+        invert: false,
+        modbusUnitId: 5,
+        type: "GRID"
     },
     channels: {}
 });

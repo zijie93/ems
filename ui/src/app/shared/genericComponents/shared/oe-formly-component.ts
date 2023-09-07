@@ -1,41 +1,42 @@
+import { ChannelAddress, EdgeConfig, Service, Websocket } from "../../shared";
+import { SharedModule } from "../../shared.module";
+import { Role } from "../../type/role";
+import { ButtonLabel } from "../modal/modal-button/modal-button";
+import { TextIndentation } from "../modal/modal-line/modal-line";
+import { Converter } from "./converter";
 import { FormGroup } from "@angular/forms";
 import { ActivatedRoute } from "@angular/router";
 import { FormlyFieldConfig } from "@ngx-formly/core";
 import { TranslateService } from "@ngx-translate/core";
 import { filter } from "rxjs/operators";
 
-import { ChannelAddress, EdgeConfig, Service } from "../../shared";
-import { SharedModule } from "../../shared.module";
-import { Role } from "../../type/role";
-import { TextIndentation } from "../modal/modal-line/modal-line";
-import { Converter } from "./converter";
-
 export abstract class AbstractFormlyComponent {
 
   protected readonly translate: TranslateService;
   protected fields: FormlyFieldConfig[] = [];
-  protected form: FormGroup = new FormGroup({});
+  protected form: FormGroup | null = null;
+  protected websocket: Websocket;
+  protected service: Service;
 
   constructor() {
-    const service = SharedModule.injector.get<Service>(Service);
+    this.service = SharedModule.injector.get<Service>(Service);
     const route = SharedModule.injector.get<ActivatedRoute>(ActivatedRoute);
     this.translate = SharedModule.injector.get<TranslateService>(TranslateService);
+    this.websocket = SharedModule.injector.get<Websocket>(Websocket);
 
-    service.setCurrentComponent('', route).then(edge => {
-      edge.getConfig(service.websocket)
+    this.service.setCurrentComponent('', route).then(edge => {
+      edge.getConfig(this.service.websocket)
         .pipe(filter(config => !!config))
         .subscribe((config) => {
           var view = this.generateView(config, edge.role, this.translate);
-
           this.fields = [{
             type: "input",
-
-            templateOptions: {
+            props: {
               attributes: {
                 title: view.title
               },
-              required: true,
-              options: [{ lines: view.lines }]
+              lines: view.lines,
+              ...(view.component && { component: view.component })
             },
             wrappers: ['formly-field-modal']
           }];
@@ -50,12 +51,13 @@ export abstract class AbstractFormlyComponent {
     * @param role  the Role of the User for this Edge
     * @param translate the Translate-Service
     */
-  protected abstract generateView(config: EdgeConfig, role: Role, translate: TranslateService): OeFormlyView
+  protected abstract generateView(config: EdgeConfig, role: Role, translate: TranslateService): OeFormlyView;
 }
 
 export type OeFormlyView = {
   title: string,
-  lines: OeFormlyField[]
+  lines: OeFormlyField[],
+  component?: EdgeConfig.Component
 }
 
 export type OeFormlyField =
@@ -63,7 +65,10 @@ export type OeFormlyField =
   | OeFormlyField.Item
   | OeFormlyField.ChildrenLine
   | OeFormlyField.ChannelLine
-  | OeFormlyField.HorizontalLine;
+  | OeFormlyField.HorizontalLine
+  | OeFormlyField.ButtonsFromChannelLine
+  | OeFormlyField.ButtonsFromValueLine
+  | OeFormlyField.NameLine;
 
 export namespace OeFormlyField {
 
@@ -97,5 +102,31 @@ export namespace OeFormlyField {
 
   export type HorizontalLine = {
     type: 'horizontal-line',
+  }
+
+  export type ButtonsFromValueLine = {
+    type: 'buttons-from-value-line',
+    /** The channel will be used as value for the buttons */
+    value: string,
+    buttons: ButtonLabel[],
+    /** Controlname needs to be the same as controller property to be updated*/
+    controlName: string,
+    converter?: (value: number | null) => string
+  }
+
+  export type ButtonsFromChannelLine = {
+    type: 'buttons-from-channel-line',
+    /** The channel will be used as value for the buttons */
+    channel: string,
+    buttons: ButtonLabel[],
+    /** Controlname needs to be the same as controller property to be updated*/
+    controlName: string,
+    valueChanges?: (formGroup: FormGroup, controlValue: string | number | boolean | null) => FormGroup
+    converter?: (value: number | null) => string
+  }
+
+  export type NameLine = {
+    type: 'name-line',
+    name: string
   }
 }
