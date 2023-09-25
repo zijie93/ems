@@ -17,6 +17,8 @@ import io.openems.common.exceptions.OpenemsError.OpenemsNamedException;
 import io.openems.edge.common.component.AbstractOpenemsComponent;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.controller.api.Controller;
+import io.openems.edge.energy.api.schedulable.Schedulable;
+import io.openems.edge.energy.api.schedulable.Schedule.Handler;
 import io.openems.edge.ess.api.HybridEss;
 import io.openems.edge.ess.api.ManagedSymmetricEss;
 import io.openems.edge.ess.api.PowerConstraint;
@@ -32,18 +34,17 @@ import io.openems.edge.timedata.api.utils.CalculateActiveTime;
 		configurationPolicy = ConfigurationPolicy.REQUIRE //
 )
 public class ControllerEssFixActivePowerImpl extends AbstractOpenemsComponent
-		implements ControllerEssFixActivePower, Controller, OpenemsComponent, TimedataProvider {
+		implements ControllerEssFixActivePower, Controller, OpenemsComponent, TimedataProvider, Schedulable {
 
 	private final CalculateActiveTime calculateCumulatedActiveTime = new CalculateActiveTime(this,
 			ControllerEssFixActivePower.ChannelId.CUMULATED_ACTIVE_TIME);
+	private final ScheduleHandler scheduleHandler = new ScheduleHandler();
 
 	@Reference
 	private ConfigurationAdmin cm;
 
 	@Reference(policy = ReferencePolicy.STATIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.MANDATORY)
 	private ManagedSymmetricEss ess;
-
-	private Config config;
 
 	@Reference(policy = ReferencePolicy.DYNAMIC, policyOption = ReferencePolicyOption.GREEDY, cardinality = ReferenceCardinality.OPTIONAL)
 	private volatile Timedata timedata = null;
@@ -73,7 +74,7 @@ public class ControllerEssFixActivePowerImpl extends AbstractOpenemsComponent
 	}
 
 	private boolean applyConfig(ComponentContext context, Config config) {
-		this.config = config;
+		this.scheduleHandler.applyStaticConfig(config);
 		return OpenemsComponent.updateReferenceFilter(this.cm, this.servicePid(), "ess", config.ess_id());
 	}
 
@@ -85,14 +86,17 @@ public class ControllerEssFixActivePowerImpl extends AbstractOpenemsComponent
 
 	@Override
 	public void run() throws OpenemsNamedException {
+		var config = this.scheduleHandler.getCurrentConfig();
+		// TODO Update _Property-Channels
+
 		var isActive = false;
 		try {
-			isActive = switch (this.config.mode()) {
+			isActive = switch (config.mode()) {
 			case MANUAL_ON -> {
 				// Apply Active-Power Set-Point
-				var acPower = getAcPower(this.ess, this.config.hybridEssMode(), this.config.power());
+				var acPower = getAcPower(this.ess, config.hybridEssMode(), config.power());
 				PowerConstraint.apply(this.ess, this.id(), //
-						this.config.phase(), Pwr.ACTIVE, this.config.relationship(), acPower);
+						config.phase(), Pwr.ACTIVE, config.relationship(), acPower);
 				yield true; // is active
 			}
 
@@ -137,4 +141,10 @@ public class ControllerEssFixActivePowerImpl extends AbstractOpenemsComponent
 	public Timedata getTimedata() {
 		return this.timedata;
 	}
+
+	@Override
+	public Handler<?, ?, ?> getScheduleHandler() {
+		return this.scheduleHandler;
+	}
+
 }

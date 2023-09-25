@@ -1,5 +1,11 @@
 package io.openems.edge.controller.ess.fixactivepower;
 
+import static io.openems.edge.controller.ess.fixactivepower.HybridEssMode.TARGET_AC;
+import static io.openems.edge.controller.ess.fixactivepower.HybridEssMode.TARGET_DC;
+import static io.openems.edge.controller.ess.fixactivepower.Mode.Config.MANUAL_OFF;
+import static io.openems.edge.controller.ess.fixactivepower.Mode.Config.MANUAL_ON;
+import static io.openems.edge.ess.power.api.Phase.ALL;
+import static io.openems.edge.ess.power.api.Relationship.EQUALS;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
@@ -7,8 +13,6 @@ import org.junit.Test;
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.common.test.DummyConfigurationAdmin;
 import io.openems.edge.controller.test.ControllerTest;
-import io.openems.edge.ess.power.api.Phase;
-import io.openems.edge.ess.power.api.Relationship;
 import io.openems.edge.ess.test.DummyHybridEss;
 import io.openems.edge.ess.test.DummyManagedAsymmetricEss;
 
@@ -26,11 +30,11 @@ public class ControllerEssFixActivePowerImplTest {
 				.activate(MyConfig.create() //
 						.setId(CTRL_ID) //
 						.setEssId(ESS_ID) //
-						.setMode(Mode.MANUAL_ON) //
-						.setHybridEssMode(HybridEssMode.TARGET_DC) //
+						.setMode(MANUAL_ON) //
+						.setHybridEssMode(TARGET_DC) //
 						.setPower(1234) //
-						.setPhase(Phase.ALL) //
-						.setRelationship(Relationship.EQUALS) //
+						.setPhase(ALL) //
+						.setRelationship(EQUALS) //
 						.build()); //
 	}
 
@@ -42,11 +46,11 @@ public class ControllerEssFixActivePowerImplTest {
 				.activate(MyConfig.create() //
 						.setId(CTRL_ID) //
 						.setEssId(ESS_ID) //
-						.setMode(Mode.MANUAL_OFF) //
-						.setHybridEssMode(HybridEssMode.TARGET_DC) //
+						.setMode(MANUAL_OFF) //
+						.setHybridEssMode(TARGET_DC) //
 						.setPower(1234) //
-						.setPhase(Phase.ALL) //
-						.setRelationship(Relationship.EQUALS) //
+						.setPhase(ALL) //
+						.setRelationship(EQUALS) //
 						.build()); //
 	}
 
@@ -60,9 +64,9 @@ public class ControllerEssFixActivePowerImplTest {
 				.withDcDischargePower(3000); //
 
 		assertEquals(Integer.valueOf(5000), //
-				ControllerEssFixActivePowerImpl.getAcPower(hybridEss, HybridEssMode.TARGET_AC, 5000));
+				ControllerEssFixActivePowerImpl.getAcPower(hybridEss, TARGET_AC, 5000));
 
 		assertEquals(Integer.valueOf(9000), //
-				ControllerEssFixActivePowerImpl.getAcPower(hybridEss, HybridEssMode.TARGET_DC, 5000));
+				ControllerEssFixActivePowerImpl.getAcPower(hybridEss, TARGET_DC, 5000));
 	}
 }
