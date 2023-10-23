@@ -1,4 +1,6 @@
-import { formatNumber } from "@angular/common";
+
+import { CurrentData, EdgeConfig, Utils } from "../../shared";
+import { Formatter } from "./formatter";
 
 import { CurrentData, EdgeConfig, Utils } from "../../shared";
 import { Formatter } from "./formatter";

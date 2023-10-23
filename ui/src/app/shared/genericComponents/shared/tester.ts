@@ -1,13 +1,3 @@
-import { ChartDataSets } from "chart.js";
-import { History } from "src/app/edge/history/common/energy/chart/channels.spec";
-import { ChartOptions } from "src/app/edge/history/shared";
-
-import { QueryHistoricTimeseriesDataResponse } from "../../jsonrpc/response/queryHistoricTimeseriesDataResponse";
-import { QueryHistoricTimeseriesEnergyPerPeriodResponse } from "../../jsonrpc/response/queryHistoricTimeseriesEnergyPerPeriodResponse";
-import { HistoryUtils } from "../../service/utils";
-import { CurrentData } from "../../shared";
-import { TestContext } from "../../test/utils.spec";
-import { AbstractHistoryChart } from "../chart/abstracthistorychart";
 import { TextIndentation } from "../modal/modal-line/modal-line";
 import { Converter } from "./converter";
 import { OeFormlyField, OeFormlyView } from "./oe-formly-component";
@@ -51,22 +41,52 @@ export class OeFormlyViewTester {
         return result;
 
 
-      case "channel-line": {
-        let tmp = OeFormlyViewTester.applyLineOrItem(field, context);
+      case "channel-line":
+        {
+          let tmp = OeFormlyViewTester.applyLineOrItem(field, context);
+          if (tmp == null) {
+            return null; // filter did not pass
+          }
+
+          // Read or generate name
+          let name: string;
+          if (typeof (field.name) === 'function') {
+            name = field.name(tmp.rawValue);
+          } else {
+            name = field.name;
+          }
+
+          // Prepare result
+          let result: OeFormlyViewTester.Field.ChannelLine = {
+            type: field.type,
+            name: name,
+            indentation: field.indentation ?? TextIndentation.NONE
+          };
+
+          // Apply properties if available
+          if (tmp.value !== null) {
+            result.value = tmp.value;
+          }
+          // Recursive call for children
+
+          return result;
+        }
+
+
+      /**
+       * {@link OeFormlyField.ValueLineFromMultipleChannels}
+       */
+      case "value-from-channels-line": {
+        let tmp = OeFormlyViewTester.applyValueLineFromChannels(field, context);
         if (tmp == null) {
           return null; // filter did not pass
         }
 
         // Read or generate name
-        let name: string;
-        if (typeof (field.name) === 'function') {
-          name = field.name(tmp.rawValue);
-        } else {
-          name = field.name;
-        }
+        let name: string = field.name;
 
         // Prepare result
-        let result: OeFormlyViewTester.Field.ChannelLine = {
+        let result: OeFormlyViewTester.Field.ValueLine = {
           type: field.type,
           name: name
         };
@@ -78,8 +98,6 @@ export class OeFormlyViewTester {
         if (field.indentation) {
           result.indentation = field.indentation;
         }
-
-        // Recursive call for children
 
         return result;
       }
