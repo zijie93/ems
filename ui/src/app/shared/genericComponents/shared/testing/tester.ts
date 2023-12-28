@@ -1,5 +1,5 @@
-import { ChartDataSets } from "chart.js";
-import { ChartOptions } from "src/app/edge/history/shared";
+import { ChartDataset } from "chart.js";
+import * as Chart from "chart.js";
 import { QueryHistoricTimeseriesDataResponse } from "src/app/shared/jsonrpc/response/queryHistoricTimeseriesDataResponse";
 import { QueryHistoricTimeseriesEnergyPerPeriodResponse } from "src/app/shared/jsonrpc/response/queryHistoricTimeseriesEnergyPerPeriodResponse";
 import { HistoryUtils } from "src/app/shared/service/utils";
@@ -215,7 +215,7 @@ export namespace OeChartTester {
     }
     export type Option = {
       type: 'option',
-      options: ChartOptions
+      options: Chart.ChartOptions
     }
   }
 }
@@ -267,7 +267,7 @@ export class OeChartTester {
    * @param datasets the datasets
    * @returns data from a chartData dataset
    */
-  public static convertChartDatasetsToDatasets(datasets: ChartDataSets[]): OeChartTester.Dataset.Data[] {
+  public static convertChartDatasetsToDatasets(datasets: ChartDataset[]): OeChartTester.Dataset.Data[] {
     let fields: OeChartTester.Dataset.Data[] = [];
 
     for (let dataset of datasets) {

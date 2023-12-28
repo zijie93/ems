@@ -6,7 +6,8 @@ import { DefaultTypes } from 'src/app/shared/service/defaulttypes';
 
 import { ChannelAddress, Edge, EdgeConfig, Service, Utils } from '../../../shared/shared';
 import { AbstractHistoryChart } from '../abstracthistorychart';
-import { Data, TooltipItem } from '../shared';
+import * as Chart from 'chart.js';
+import { ChartAxis } from 'src/app/shared/service/utils';
 
 @Component({
     selector: 'storageSingleChart',
@@ -156,10 +157,13 @@ export class StorageSingleChartComponent extends AbstractHistoryChart implements
                                 }
                             }
                         });
+                    }).then(() => {
+                        this.datasets = datasets;
+                        this.loading = false;
+                        this.stopSpinner();
+                        this.setOptions(this.options);
+                        this.applyControllerSpecificChartOptions(this.options);
                     });
-                    this.datasets = datasets;
-                    this.loading = false;
-                    this.stopSpinner();
 
                 }).catch(reason => {
                     console.error(reason); // TODO error message
@@ -180,26 +184,13 @@ export class StorageSingleChartComponent extends AbstractHistoryChart implements
         });
     }
 
-    protected getChannelAddresses(edge: Edge, config: EdgeConfig): Promise<ChannelAddress[]> {
-        return new Promise((resolve) => {
-            let result: ChannelAddress[] = [
-                new ChannelAddress('_sum', 'EssActivePower'),
-                new ChannelAddress('_sum', 'ProductionDcActualPower'),
-                new ChannelAddress('_sum', 'EssActivePowerL1'),
-                new ChannelAddress('_sum', 'EssActivePowerL2'),
-                new ChannelAddress('_sum', 'EssActivePowerL3'),
-            ];
-            resolve(result);
-        });
-    }
+    private applyControllerSpecificChartOptions(options: Chart.ChartOptions) {
+        const translate = this.translate;
 
-    protected setLabel() {
-        let translate = this.translate; // enables access to TranslateService
-        let options = this.createDefaultChartOptions();
-        options.scales.yAxes[0].scaleLabel.labelString = "kW";
-        options.tooltips.callbacks.label = function (tooltipItem: TooltipItem, data: Data) {
-            let label = data.datasets[tooltipItem.datasetIndex].label;
-            let value = tooltipItem.yLabel;
+        options.scales[ChartAxis.LEFT].min = null;
+        options.plugins.tooltip.callbacks.label = function (tooltipItem: Chart.TooltipItem<any>) {
+            let label = tooltipItem.dataset.label;
+            let value = tooltipItem.dataset.data[tooltipItem.dataIndex];
             // 0.005 to prevent showing Charge or Discharge if value is e.g. 0.00232138
             if (value < -0.005) {
                 if (label.includes(translate.instant('General.phase'))) {
@@ -216,7 +207,23 @@ export class StorageSingleChartComponent extends AbstractHistoryChart implements
             }
             return label + ": " + formatNumber(value, 'de', '1.0-2') + " kW";
         };
-        this.options = options;
+    }
+
+    protected getChannelAddresses(edge: Edge, config: EdgeConfig): Promise<ChannelAddress[]> {
+        return new Promise((resolve) => {
+            let result: ChannelAddress[] = [
+                new ChannelAddress('_sum', 'EssActivePower'),
+                new ChannelAddress('_sum', 'ProductionDcActualPower'),
+                new ChannelAddress('_sum', 'EssActivePowerL1'),
+                new ChannelAddress('_sum', 'EssActivePowerL2'),
+                new ChannelAddress('_sum', 'EssActivePowerL3'),
+            ];
+            resolve(result);
+        });
+    }
+
+    protected setLabel() {
+        this.options = this.createDefaultChartOptions();
     }
 
     public getChartHeight(): number {

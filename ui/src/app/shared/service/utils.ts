@@ -1,6 +1,6 @@
 import { formatNumber } from '@angular/common';
 import { TranslateService } from '@ngx-translate/core';
-import { ChartDataSets } from 'chart.js';
+import * as Chart from 'chart.js';
 import { saveAs } from 'file-saver-es';
 import { DefaultTypes } from 'src/app/shared/service/defaulttypes';
 
@@ -448,7 +448,7 @@ export class Utils {
     saveAs(data, filename + '.xlsx');
   }
 
-  /*
+  /**
   * Calculate the Self-Consumption rate.
   * 
   * @param sellToGrid the Sell-To-Grid power (i.e. the inverted GridActivePower)
@@ -478,7 +478,7 @@ export class Utils {
   }
 
   /**
-   * Calculate the Autarchy Rate
+   * Calculates the Autarchy Rate
    * 
    * @param buyFromGrid the Buy-From-Grid power (GridActivePower)
    * @param consumptionActivePower the Consumption Power (ConsumptionActivePower)
@@ -495,7 +495,6 @@ export class Utils {
           /* calculate autarchy */(1 - buyFromGrid / consumptionActivePower) * 100,
         ));
       }
-
     } else {
       return null;
     }
@@ -539,7 +538,20 @@ export class Utils {
   public static isDataEmpty(arg: JsonrpcResponseSuccess): boolean {
     return Object.values(arg.result['data'])?.map(element => element as number[])?.every(element => element?.every(elem => elem == null) ?? true);
   }
-
+  /**
+   * Returns the label based on component factory id.
+   * 
+   * @param component The Component.
+   * @param translate The Translate
+   * @returns the label.
+   */
+  public static getTimeOfUseTariffStorageLabel(component: EdgeConfig.Component, translate: TranslateService): string {
+    if (component.factoryId === 'Controller.Ess.Time-Of-Use-Tariff.Discharge') {
+      return translate.instant('Edge.Index.Widgets.TimeOfUseTariff.STORAGE_DISCHARGE');
+    } else {
+      return translate.instant('Edge.Index.Widgets.TimeOfUseTariff.STORAGE_STATUS');
+    }
+  }
 
   /**
    * Calculates the total other consumption.
@@ -619,8 +631,8 @@ export enum YAxisTitle {
 }
 
 export enum ChartAxis {
-  LEFT = 'left',
-  RIGHT = 'right'
+  LEFT = 'yAxisLeft',
+  RIGHT = 'yAxisRight'
 }
 export namespace HistoryUtils {
 
@@ -634,7 +646,7 @@ export namespace HistoryUtils {
  * @param translate the TranslateService
  * @returns a dataset
  */
-  export function createEmptyDataset(translate: TranslateService): ChartDataSets[] {
+  export function createEmptyDataset(translate: TranslateService): Chart.ChartDataset<any>[] {
     return [{
       label: translate.instant("Edge.History.noData"),
       data: [],
@@ -703,10 +715,10 @@ export namespace HistoryUtils {
       formatNumber: string,
       afterTitle?: (stack: string) => string,
     },
-    yAxes: yAxes[],
+    yAxes: yAxis[],
   }
 
-  export type yAxes = {
+  export type yAxis = {
     /** Name to be displayed on the left y-axis, also the unit to be displayed in tooltips and legend */
     unit: YAxisTitle,
     customTitle?: string,
@@ -761,7 +773,7 @@ export namespace HistoryUtils {
 export namespace TimeOfUseTariffUtils {
 
   export type ScheduleChartData = {
-    datasets: ChartDataSets[],
+    datasets: Chart.ChartDataset[],
     colors: any[],
     labels: Date[]
   }
@@ -802,7 +814,7 @@ export namespace TimeOfUseTariffUtils {
    */
   export function getScheduleChartData(size: number, prices: number[], states: number[], timestamps: string[], translate: TranslateService, factoryId: string): ScheduleChartData {
     let scheduleChartData: ScheduleChartData;
-    let datasets: ChartDataSets[] = [];
+    let datasets: Chart.ChartDataset[] = [];
     let colors: any[] = [];
     let labels: Date[] = [];
 

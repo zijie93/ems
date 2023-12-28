@@ -1,9 +1,8 @@
-import { formatNumber } from '@angular/common';
 import { Component, Input, OnChanges, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, Data } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { AbstractHistoryChart } from 'src/app/edge/history/abstracthistorychart';
-import { ChartOptions, DEFAULT_TIME_CHART_OPTIONS, TooltipItem, Unit } from 'src/app/edge/history/shared';
+import { ChartOptions, DEFAULT_TIME_CHART_OPTIONS, Unit } from 'src/app/edge/history/shared';
 import { DefaultTypes } from 'src/app/shared/service/defaulttypes';
 import { ChannelAddress, Edge, EdgeConfig, Service, Utils } from 'src/app/shared/shared';
 
@@ -228,49 +227,49 @@ export class PredictionChartComponent extends AbstractHistoryChart implements On
         options.scales.yAxes.shift();
 
         // adds second y-axis to chart
-        options.scales.yAxes
-            .push({
-                id: 'yAxis2',
-                position: 'right',
-                scaleLabel: {
-                    display: true,
-                    labelString: "%",
-                    padding: -2,
-                    fontSize: 11,
-                },
-                gridLines: {
-                    display: true,
-                },
-                ticks: {
-                    beginAtZero: true,
-                    max: 100,
-                    padding: -5,
-                    stepSize: 20,
-                },
-            });
+        // options.scales.yAxes
+        //     .push({
+        //         id: 'yAxis2',
+        //         position: 'right',
+        //         scaleLabel: {
+        //             display: true,
+        //             labelString: "%",
+        //             padding: -2,
+        //             fontSize: 11,
+        //         },
+        //         gridLines: {
+        //             display: true,
+        //         },
+        //         ticks: {
+        //             beginAtZero: true,
+        //             max: 100,
+        //             padding: -5,
+        //             stepSize: 20,
+        //         },
+        //     });
 
-        options.layout = {
-            padding: {
-                left: 2,
-                right: 2,
-                top: 0,
-                bottom: 0,
-            },
-        };
-        //x-axis
-        options.scales.xAxes[0].time.unit = "hour";
+        // options.layout = {
+        //     padding: {
+        //         left: 2,
+        //         right: 2,
+        //         top: 0,
+        //         bottom: 0,
+        //     },
+        // };
+        // //x-axis
+        // options.scales.xAxes[0].time.unit = "hour";
 
-        //y-axis
-        options.tooltips.callbacks.label = function (tooltipItem: TooltipItem, data: Data) {
-            let label = data.datasets[tooltipItem.datasetIndex].label;
-            let value = tooltipItem.yLabel;
-            if (label == translate.instant('General.soc') || label == translate.instant('Edge.Index.Widgets.GridOptimizedCharge.expectedSoc')) {
-                return label + ": " + formatNumber(value, 'de', '1.0-0') + " %";
-            } else {
-                return label + ": " + formatNumber(value, 'de', '1.0-2') + " kW";
-            }
-        };
-        this.options = options;
+        // //y-axis
+        // options.tooltips.callbacks.label = function (tooltipItem: TooltipItem, data: Data) {
+        //     let label = data.datasets[tooltipItem.datasetIndex].label;
+        //     let value = tooltipItem.yLabel;
+        //     if (label == translate.instant('General.soc') || label == translate.instant('Edge.Index.Widgets.GridOptimizedCharge.expectedSoc')) {
+        //         return label + ": " + formatNumber(value, 'de', '1.0-0') + " %";
+        //     } else {
+        //         return label + ": " + formatNumber(value, 'de', '1.0-2') + " kW";
+        //     }
+        // };
+        // this.options = options;
     }
 
 }

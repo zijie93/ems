@@ -1,9 +1,7 @@
-import { formatNumber } from '@angular/common';
 import { Component, Input, OnChanges, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, Data } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { AbstractHistoryChart } from 'src/app/edge/history/abstracthistorychart';
-import { TooltipItem } from 'src/app/edge/history/shared';
 import { ComponentJsonApiRequest } from 'src/app/shared/jsonrpc/request/componentJsonApiRequest';
 import { TimeOfUseTariffUtils } from 'src/app/shared/service/utils';
 import { ChannelAddress, Currency, Edge, EdgeConfig, Service, Websocket } from 'src/app/shared/shared';
@@ -86,29 +84,29 @@ export class ScheduleChartComponent extends AbstractHistoryChart implements OnIn
         const currencyLabel: string = this.currencyLabel;
 
         // Scale prices y-axis between min-/max-values, not from zero
-        options.scales.yAxes[0].ticks.beginAtZero = false;
+        // options.scales.yAxes[0].ticks.beginAtZero = false;
 
-        //x-axis
-        options.scales.xAxes[0].time.unit = "hour";
-        options.scales.xAxes[0].stacked = true;
+        // //x-axis
+        // options.scales.xAxes[0].time.unit = "hour";
+        // options.scales.xAxes[0].stacked = true;
 
-        //y-axis
-        options.scales.yAxes[0].id = "yAxis1";
-        options.scales.yAxes[0].scaleLabel.padding = -2;
-        options.scales.yAxes[0].scaleLabel.fontSize = 11;
-        options.scales.yAxes[0].ticks.padding = -5;
+        // //y-axis
+        // options.scales.yAxes[0].id = "yAxis1";
+        // options.scales.yAxes[0].scaleLabel.padding = -2;
+        // options.scales.yAxes[0].scaleLabel.fontSize = 11;
+        // options.scales.yAxes[0].ticks.padding = -5;
 
-        options.tooltips.callbacks.label = function (tooltipItem: TooltipItem, data: Data) {
-            let label = data.datasets[tooltipItem.datasetIndex].label;
-            let value = tooltipItem.yLabel;
+        // options.tooltips.callbacks.label = function (tooltipItem: TooltipItem, data: Data) {
+        //     let label = data.datasets[tooltipItem.datasetIndex].label;
+        //     let value = tooltipItem.yLabel;
 
-            // TODO solve before here
-            if (!value) {
-                return;
-            }
-            return label + ": " + formatNumber(value, 'de', '1.0-4') + ' ' + currencyLabel;
-        };
-        this.options = options;
+        //     // TODO solve before here
+        //     if (!value) {
+        //         return;
+        //     }
+        //     return label + ": " + formatNumber(value, 'de', '1.0-4') + ' ' + currencyLabel;
+        // };
+        // this.options = options;
     }
 
     protected getChannelAddresses(): Promise<ChannelAddress[]> {
