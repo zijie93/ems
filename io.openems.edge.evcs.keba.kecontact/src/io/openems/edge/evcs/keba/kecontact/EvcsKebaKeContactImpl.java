@@ -6,6 +6,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.time.Duration;
+import java.time.Instant;
 
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -24,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import io.openems.common.exceptions.OpenemsException;
 import io.openems.edge.common.channel.Channel;
+import io.openems.edge.common.component.ComponentManager;
 import io.openems.edge.common.component.OpenemsComponent;
 import io.openems.edge.common.event.EdgeEventConstants;
 import io.openems.edge.common.modbusslave.ModbusSlave;
@@ -52,6 +55,9 @@ public class EvcsKebaKeContactImpl extends AbstractManagedEvcsComponent
 	private final ReadHandler readHandler = new ReadHandler(this);
 
 	@Reference
+	private ComponentManager componentManager;
+
+	@Reference
 	private EvcsPower evcsPower;
 
 	@Reference(policy = ReferencePolicy.STATIC, cardinality = ReferenceCardinality.MANDATORY)
@@ -61,6 +67,8 @@ public class EvcsKebaKeContactImpl extends AbstractManagedEvcsComponent
 
 	private Boolean lastConnectionLostState = false;
 	private InetAddress ip = null;
+	private Instant lastPhaseChangeTime = Instant.MIN;
+	private static final long PHASE_SWITCH_COOLDOWN_SECONDS = 310;
 
 	public EvcsKebaKeContactImpl() {
 		super(//
@@ -202,22 +210,93 @@ public class EvcsKebaKeContactImpl extends AbstractManagedEvcsComponent
 		return this.config.debugMode();
 	}
 
+	/**
+	 * Checks whether the phase switch configuration is active. This method queries
+	 * the current configuration to determine if the phase switch has been enabled.
+	 * 
+	 * @return true if the phase switch is active, false otherwise.
+	 */
+	public boolean phaseSwitchActive() {
+		return this.config.phaseSwitchActive();
+	}
+
 	@Override
 	public boolean applyChargePowerLimit(int power) throws OpenemsException {
+		Instant now = Instant.now(this.componentManager.getClock());
+		this.log.debug("Applying charge power limit: [Power: " + power + "W] at [" + now + "]");
+
+		// Phase switch cooldown: 310 seconds
+		boolean isPhaseSwitchCooldownOver = this.lastPhaseChangeTime.plusSeconds(PHASE_SWITCH_COOLDOWN_SECONDS)
+				.isBefore(now);
+		this.log.debug("Phase switch cooldown over: " + isPhaseSwitchCooldownOver);
 
 		var phases = this.getPhasesAsInt();
-		var current = Math.round((power * 1000) / phases / 230f);
+		this.log.debug("Current charging phase configuration: " + phases + " phases");
 
-		/*
-		 * Limits the charging value because KEBA knows only values between 6000 and
-		 * 63000
-		 */
-		current = Math.min(current, 63_000);
+		var current = this.calculateCurrent(power, phases);
+		this.log.debug("Calculated current for charging: " + current + "mA");
 
-		if (current < 6000) {
-			current = 0;
+		// Determine if switching phases is necessary
+		boolean switchToThreePhasesCondition = this.shouldSwitchToThreePhases(power, phases)
+				&& isPhaseSwitchCooldownOver;
+		boolean switchToOnePhaseCondition = this.shouldSwitchToOnePhase(power, phases) && isPhaseSwitchCooldownOver;
+
+		if (switchToThreePhasesCondition || switchToOnePhaseCondition) {
+			boolean switchSuccess = this.switchPhases(switchToThreePhasesCondition, now);
+			if (!switchSuccess) {
+				this.log.info("Phase switch failed. Exiting.");
+				return false; // Early exit if phase switch failed
+			}
+		} else if (!isPhaseSwitchCooldownOver) {
+			Duration timeUntilNextSwitch = Duration.between(now,
+					this.lastPhaseChangeTime.plusSeconds(PHASE_SWITCH_COOLDOWN_SECONDS));
+			long secondsUntilNextSwitch = timeUntilNextSwitch.getSeconds();
+			this.log.info("Phase switch cooldown period has not passed. Time before next switch: "
+					+ secondsUntilNextSwitch + " seconds.");
 		}
-		return this.send("currtime " + current + " 1");
+
+		// Send command to set current
+		boolean sendSuccess = this.send("currtime " + current + " 1");
+		this.log.debug("Command to set current sent. Success: " + sendSuccess);
+
+		return sendSuccess;
+	}
+
+	boolean shouldSwitchToOnePhase(int power, int phases) {
+		return power < 4140 && phases == 3;
+	}
+
+	private int calculateCurrent(int power, int phases) {
+		int current = Math.round((power * 1000) / (phases * 230f));
+		this.log.debug("Initial calculated current: " + current + "mA for power: " + power + "W, phases: " + phases);
+
+		// Ensure the current is within KEBA's acceptable range
+		current = Math.min(Math.max(current, 6000), 63_000);
+		if (current == 6000 && power > 0) {
+			// Adjust current for powers just over the threshold for 1-phase charging
+			current = Math.max(current, 6000);
+		}
+		this.log.debug("Adjusted current within KEBA's range: " + current + "mA");
+		return current;
+	}
+
+	boolean shouldSwitchToThreePhases(int power, int phases) {
+		boolean shouldSwitch = power > 4140 && phases != 3;
+		this.log.debug("Should switch to 3 phases: " + shouldSwitch + " [Power: " + power + "W, Current phases: "
+				+ phases + "]");
+		return shouldSwitch;
+	}
+
+	private boolean switchPhases(boolean toThreePhases, Instant now) {
+		String command = toThreePhases ? "x2 1" : "x2 0";
+		if (this.send(command)) {
+			this.lastPhaseChangeTime = now; // Update the cooldown timer regardless of the phase switch direction
+			this.log.info("Switched to " + (toThreePhases ? "3 phases" : "1 phase") + " successfully.");
+			return true;
+		} else {
+			this.log.warn("Failed to switch to " + (toThreePhases ? "3 phases" : "1 phase") + ".");
+			return false;
+		}
 	}
 
 	@Override
