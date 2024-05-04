@@ -23,10 +23,11 @@
               </ion-item>
               <ion-item lines="none">
                 <ion-select style="white-space: initial;width: 100%;" #selectedChannelId interface="alert"
+                  [disabled]="!selectedComponentId?.value"
                   [placeholder]="'CHANNELS.CHANNEL'| translate">
-                  <ng-container *ngIf="selectedComponentId && selectedComponentId.value">
+                  <ng-container *ngIf="selectedComponentId?.value">
                     <ion-select-option
-                      *ngFor="let entry of (config.components[selectedComponentId.value].channels | keys)"
+                      *ngFor="let entry of (config.components[selectedComponentId?.value]?.channels | keys)"
                       [value]="entry.key">
                       {{ entry.key }}</ion-select-option>
                   </ng-container>
